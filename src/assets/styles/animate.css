@@ -1,0 +1,42 @@
+
+.base-transition {
+    transition: all .3s ease-in-out;
+}
+
+/* Nav Animation */
+.nav-enter-active,
+.nav-leave-active {
+  transition: all 0.4s ease;
+}
+
+.nav-enter-from,
+.nav-leave-to {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+/* Menu Animation */
+.menu-enter-active,
+.menu-leave-active {
+  transition: transform 0.3s ease;
+  transform-origin: top left;
+}
+
+.menu-enter-from,
+.menu-leave-to {
+  transform: scale(0);
+}
+
+
+
+.modal-enter-active,
+.modal-leave-active {
+  transition: transform 0.3s ease;
+  transform-origin: center;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  /* opacity: 0; */
+  transform: scale(0);
+}
