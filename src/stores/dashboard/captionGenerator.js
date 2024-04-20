@@ -38,7 +38,8 @@ export const useCaptionGeneratorStore = defineStore("CaptionGenerator", () => {
       const { data, error } = await supabase
         .from("generated_captions")
         .select("*")
-        .eq("userId", userId);
+        .eq("userId", userId)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       allGeneratedCaption.value.data = data;
       allGeneratedCaption.value.loading = false;
@@ -87,7 +88,7 @@ export const useCaptionGeneratorStore = defineStore("CaptionGenerator", () => {
 
       if (error) throw error;
       useNotification.showMessage("success", "Image Uploaded Successfully");
-      getAllGeneratedCaptions()
+      getAllGeneratedCaptions();
     } catch (error) {
       //   console.log(error);
       if (error instanceof Error) {
