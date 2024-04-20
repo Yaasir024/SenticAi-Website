@@ -1,11 +1,22 @@
 <script setup>
 import { ref, computed } from "vue";
-import InputOtp from "primevue/inputotp";
-const value = ref(null)
 
 </script>
 
 <template>
-    This is home
-    <InputOtp v-model="value" integerOnly />
+    <div class="h-screen w-full flex items-center justify-center">
+        <div class="">
+            <h1 class="text-center text-[30px]">
+                Thank You for coming to SenticAi Test.
+            </h1>
+            <div class="mt-2 flex items-center justify-center">
+                <RouterLink to="/dashboard">
+                    <button
+                                class="bg-brand w-full p-2 rounded-lg text-white">
+                                Go To Dashboard
+                            </button>
+                </RouterLink>
+            </div>
+        </div>
+    </div>
 </template>
