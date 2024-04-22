@@ -24,6 +24,22 @@ export const useCaptionGeneratorStore = defineStore("CaptionGenerator", () => {
     loading: false,
   });
 
+  const generateCaptionData = ref({
+    image: null,
+    imageType: "",
+    platform: "",
+    generateHashtags: false,
+  });
+
+  const clearGenerateData = () => {
+    generateCaptionData.value = {
+      image: null,
+      imageType: "",
+      platform: "",
+      generateHashtags: false,
+    };
+  };
+
   const getAllGeneratedCaptions = async () => {
     allGeneratedCaption.value.loading = true;
     allGeneratedCaption.value.success = false;
@@ -107,7 +123,6 @@ export const useCaptionGeneratorStore = defineStore("CaptionGenerator", () => {
         .from("caption-generator-images")
         .upload(generateUniqueId(), file);
       if (error) throw error;
-      //   console.log(data);
       const imageFullPath = `https://meggaeeyyayvbjvryxyy.supabase.co/storage/v1/object/public/${data.fullPath}`;
       saveCaptionImage(imageFullPath);
       // console.log(imageFullPath);
@@ -121,9 +136,89 @@ export const useCaptionGeneratorStore = defineStore("CaptionGenerator", () => {
     }
   };
 
+  async function uploadToStorage(image) {
+    const { data, error } = await supabase.storage
+      .from("caption-generator-images")
+      .upload(generateUniqueId(), generateCaptionData.value.image);
+    if (error) throw error;
+    const imageUrl = `https://meggaeeyyayvbjvryxyy.supabase.co/storage/v1/object/public/${data.fullPath}`;
+    return imageUrl;
+  }
+
+  async function generateCaptionFromModel(imageUrl) {
+    // Simulate caption generation (replace with your actual implementation)
+    const data = `This image is most likely about something interesting.`;
+    console.log(`Mocked caption generation: ${data}`);
+    return new Promise((resolve) => resolve(data));
+  }
+
+  const saveDataToDB = async (image, gen_data, status) => {
+    const { data, error } = await supabase
+      .from("generated_captions")
+      .insert([
+        {
+          userId: useUser.userData.id,
+          imageUrl: image,
+          status: status,
+          imageType: generateCaptionData.value.imageType,
+          platform: generateCaptionData.value.platform,
+          generateHashtags: generateCaptionData.value.generateHashtags,
+        },
+      ])
+      .select();
+
+    if (error) throw error;
+    return data;
+  };
+
+  const generateCaption = async () => {
+    useSystem.showLoader();
+    try {
+      const imageUrl = uploadToStorage(generateCaptionData.value.image);
+      console.log(imageUrl);
+
+      // Caption generation logic
+      try {
+        const caption = await generateCaptionFromModel(imageUrl);
+
+        // Save to database with success status
+        await saveDataToDB(imageUrl, null, "success");
+        console.log(caption);
+
+        useNotification.showMessage(
+          "success",
+          "Caption generated successfully."
+        );
+        showCaptionGenerator.value = false;
+        useSystem.hideLoader();
+      } catch (captionError) {
+        console.error("Error generating caption:", captionError);
+
+        // Save to database with pending status even on caption generation error
+        await saveDataToDB(imageUrl, null, "pending");
+
+        // Failed Error
+        useNotification.showMessage(
+          "error",
+          "Failed to generate caption. Try Again Later."
+        );
+        showCaptionGenerator.value = false;
+        useSystem.hideLoader();
+      }
+    } catch (uploadError) {
+      if (uploadError instanceof Error) {
+        useNotification.showMessage("error", uploadError.message);
+      }
+      useSystem.hideLoader();
+    }
+  };
+
   return {
+    generateCaptionData,
     allGeneratedCaption,
+    clearGenerateData,
     getAllGeneratedCaptions,
+    generateCaption,
     showCaptionGenerator,
     uploadFile,
   };

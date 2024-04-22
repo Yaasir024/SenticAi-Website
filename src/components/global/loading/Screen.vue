@@ -7,13 +7,13 @@ import ProgressSpinner from 'primevue/progressspinner';
 </script>
 
 <template>
-    <div class="">
-        <div class="centered-div z-[400]">
+    <div class="z-[3000]">
+        <div class="centered-div z-[3800]">
             <ProgressSpinner style="width: 80px; height: 80px" strokeWidth="8"
                 class="fill-surface-0 dark:fill-surface-800" animationDuration=".4s"
                 aria-label="Custom ProgressSpinner" />
         </div>
-        <Overlay :background="'bg-black/80'" class="z-[320]" />
+        <Overlay :background="'bg-black/80'" class="z-[3200]" />
     </div>
 </template>
 

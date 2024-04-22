@@ -8,6 +8,7 @@ const useSystem = useSystemStore()
 <template>
   <main class="">
     <RouterView />
+  <!-- <LoadingState v-if="true" /> -->
   <LoadingState v-if="useSystem.loadingState" />
   </main>
 </template>
