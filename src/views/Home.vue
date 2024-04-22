@@ -7,7 +7,7 @@ import { ref, computed } from "vue";
     <div class="h-screen w-full flex items-center justify-center">
         <div class="">
             <h1 class="text-center text-[30px]">
-                Thank You for coming to SenticAi Test.
+                Welcome To SenticAI.
             </h1>
             <div class="mt-2 flex items-center justify-center">
                 <RouterLink to="/dashboard">
