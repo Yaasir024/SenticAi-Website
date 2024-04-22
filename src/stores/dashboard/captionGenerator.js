@@ -2,6 +2,8 @@ import { ref, computed, watch } from "vue";
 import { defineStore } from "pinia";
 import { supabase } from "@/lib/supabaseClient";
 
+import axios from "axios";
+
 import { useUserStore } from "@/stores/user/main";
 import { useSystemStore } from "@/stores/system/main";
 import { useSystemNotifications } from "@/stores/system/notification";
@@ -9,6 +11,7 @@ import { useSystemNotifications } from "@/stores/system/notification";
 import router from "@/router";
 
 export const useCaptionGeneratorStore = defineStore("CaptionGenerator", () => {
+  const modelsBaseEndpoint = import.meta.env.VITE_MODELS_BASE_ENDPOINT;
   const useUser = useUserStore();
   // Initialize System
   const useSystem = useSystemStore();
@@ -16,8 +19,15 @@ export const useCaptionGeneratorStore = defineStore("CaptionGenerator", () => {
   const useNotification = useSystemNotifications();
 
   const showCaptionGenerator = ref(false);
+  const showViewCaptionModal = ref(false);
 
   const allGeneratedCaption = ref({
+    data: null,
+    success: false,
+    error: false,
+    loading: false,
+  });
+  const singleCaption = ref({
     data: null,
     success: false,
     error: false,
@@ -75,6 +85,35 @@ export const useCaptionGeneratorStore = defineStore("CaptionGenerator", () => {
     // allGeneratedCaption.value.loading = false;
     //     allGeneratedCaption.value.error = true;
   };
+  const getCaptions = async (id) => {
+    singleCaption.value.loading = true;
+    singleCaption.value.success = false;
+    singleCaption.value.error = false;
+    // Wait for useUser.userData.id to be available
+    while (!useUser.userData) {
+      await new Promise((resolve) => setTimeout(resolve, 100)); // Wait for 100ms
+    }
+    try {
+      let userId = useUser.userData.id;
+      singleCaption.value.loading = true;
+      const { data, error } = await supabase
+        .from("generated_captions")
+        .select("*")
+        .eq("userId", userId)
+        .eq("id", id) // Add the `id` filter
+        .single();
+      if (error) throw error;
+      // console.log(data)
+      singleCaption.value.data = data;
+      singleCaption.value.loading = false;
+      singleCaption.value.success = true;
+    } catch (error) {
+      singleCaption.value.loading = false;
+      singleCaption.value.success = true;
+      singleCaption.value.error = false;
+      singleCaption.value.errorMessage = error.message;
+    }
+  };
 
   const generateUniqueId = () => {
     // Generate a random string
@@ -89,53 +128,6 @@ export const useCaptionGeneratorStore = defineStore("CaptionGenerator", () => {
     return uniqueId;
   };
 
-  const saveCaptionImage = async (imgUrl) => {
-    try {
-      const { data, error } = await supabase
-        .from("generated_captions")
-        .insert([
-          {
-            userId: useUser.userData.id,
-            imageUrl: imgUrl,
-            status: "pending",
-          },
-        ])
-        .select();
-
-      if (error) throw error;
-      useNotification.showMessage("success", "Image Uploaded Successfully");
-      getAllGeneratedCaptions();
-    } catch (error) {
-      //   console.log(error);
-      if (error instanceof Error) {
-        useNotification.showMessage("error", error.message);
-      }
-    } finally {
-      useSystem.hideLoader();
-    }
-  };
-
-  const uploadFile = async (file) => {
-    try {
-      showCaptionGenerator.value = false;
-      useSystem.showLoader();
-      const { data, error } = await supabase.storage
-        .from("caption-generator-images")
-        .upload(generateUniqueId(), file);
-      if (error) throw error;
-      const imageFullPath = `https://meggaeeyyayvbjvryxyy.supabase.co/storage/v1/object/public/${data.fullPath}`;
-      saveCaptionImage(imageFullPath);
-      // console.log(imageFullPath);
-    } catch (error) {
-      //   console.log(error);
-      if (error instanceof Error) {
-        useNotification.showMessage("error", error.message);
-      }
-    } finally {
-      showCaptionGenerator.value = false;
-    }
-  };
-
   async function uploadToStorage(image) {
     const { data, error } = await supabase.storage
       .from("caption-generator-images")
@@ -146,13 +138,25 @@ export const useCaptionGeneratorStore = defineStore("CaptionGenerator", () => {
   }
 
   async function generateCaptionFromModel(imageUrl) {
-    // Simulate caption generation (replace with your actual implementation)
-    const data = `This image is most likely about something interesting.`;
-    console.log(`Mocked caption generation: ${data}`);
-    return new Promise((resolve) => resolve(data));
+    const url = `${modelsBaseEndpoint}/generate-caption/gemini/from-image`;
+
+    const data = {
+      imageUrl: imageUrl,
+      platform: generateCaptionData.value.platform,
+      imageType: generateCaptionData.value.imageType,
+      generateHashtags: generateCaptionData.value.generateHashtags,
+    };
+    try {
+      const response = await axios.post(url, data); // Use await for the asynchronous request
+      // console.log(response.data.result, "Result");
+      return response.data.result; // Return the result from the response
+    } catch (error) {
+      // console.error("Error generating caption:", error);
+      throw error; // Re-throw the error for handling in the calling function
+    }
   }
 
-  const saveDataToDB = async (image, gen_data, status) => {
+  const saveDataToDB = async (image, generatedResult, status) => {
     const { data, error } = await supabase
       .from("generated_captions")
       .insert([
@@ -160,6 +164,8 @@ export const useCaptionGeneratorStore = defineStore("CaptionGenerator", () => {
           userId: useUser.userData.id,
           imageUrl: image,
           status: status,
+          generatedCaption: generatedResult ? generatedResult.caption : null,
+          hashtags: generatedResult ? generatedResult.hashtags : null,
           imageType: generateCaptionData.value.imageType,
           platform: generateCaptionData.value.platform,
           generateHashtags: generateCaptionData.value.generateHashtags,
@@ -174,25 +180,31 @@ export const useCaptionGeneratorStore = defineStore("CaptionGenerator", () => {
   const generateCaption = async () => {
     useSystem.showLoader();
     try {
-      const imageUrl = uploadToStorage(generateCaptionData.value.image);
-      console.log(imageUrl);
+      const imageUrl = await uploadToStorage(generateCaptionData.value.image);
 
       // Caption generation logic
       try {
-        const caption = await generateCaptionFromModel(imageUrl);
+        const result = await generateCaptionFromModel(imageUrl);
 
         // Save to database with success status
-        await saveDataToDB(imageUrl, null, "success");
-        console.log(caption);
+        const dbData = await saveDataToDB(imageUrl, result, "success");
+        // console.log(dbData[0].id, "DB Data");
 
         useNotification.showMessage(
           "success",
           "Caption generated successfully."
         );
         showCaptionGenerator.value = false;
+
+        const insertedId = dbData[0].id;
+        if (insertedId) {
+          router.push(`/dashboard/${insertedId}`);
+        } else {
+          router.push("/dashboard");
+        }
         useSystem.hideLoader();
       } catch (captionError) {
-        console.error("Error generating caption:", captionError);
+        // console.error("Error generating caption:", captionError);
 
         // Save to database with pending status even on caption generation error
         await saveDataToDB(imageUrl, null, "pending");
@@ -214,12 +226,15 @@ export const useCaptionGeneratorStore = defineStore("CaptionGenerator", () => {
   };
 
   return {
-    generateCaptionData,
     allGeneratedCaption,
-    clearGenerateData,
-    getAllGeneratedCaptions,
-    generateCaption,
+    singleCaption,
+    generateCaptionData,
     showCaptionGenerator,
-    uploadFile,
+    showViewCaptionModal,
+    clearGenerateData,
+    getCaptions,
+    getAllGeneratedCaptions,
+    generateCaptionFromModel,
+    generateCaption,
   };
 });

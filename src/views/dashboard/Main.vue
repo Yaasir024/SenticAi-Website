@@ -1,16 +1,20 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import { useRoute } from "vue-router";
 
-import { getFormatDateTime } from "@/utils/date"
+import router from "@/router";
 
-import Tag from 'primevue/tag';
-import ProgressSpinner from 'primevue/progressspinner';
 
 import DashboardTemplate from "@/templates/Dashboard.vue"
-import CaptionGenerator from '@/components/dashboard/modals/CaptionGenerator.vue';
+import CaptionGrid from '@/components/dashboard/caption/Grid.vue';
+import CaptionGenerator from '@/components/dashboard/modals/caption/Create.vue';
+
+import ProgressSpinner from 'primevue/progressspinner';
 
 import { useAuthStore } from "@/stores/auth/index"
 import { useCaptionGeneratorStore } from "@/stores/dashboard/captionGenerator"
+
+const route = useRoute()
 
 const useAuth = useAuthStore()
 const useCaptionGenerator = useCaptionGeneratorStore()
@@ -23,6 +27,7 @@ onMounted(() => {
 const logout = () => {
     useAuth.logOut()
 }
+
 </script>
 
 <template>
@@ -42,7 +47,8 @@ const logout = () => {
                             </li>
                         </ul>
                         <div class="flex items-center gap-x-2">
-                            <button @click="logout" class="elative flex items-center py-2 px-5 hover:bg-[#f1f5f9] rounded-md">
+                            <button @click="logout"
+                                class="elative flex items-center py-2 px-5 hover:bg-[#f1f5f9] rounded-md">
                                 <span class="">Logout</span>
                             </button>
                             <button @click="useCaptionGenerator.showCaptionGenerator = true"
@@ -65,29 +71,7 @@ const logout = () => {
                             class="fill-surface-0 dark:fill-surface-800" animationDuration=".4s"
                             aria-label="Custom ProgressSpinner" />
                     </div>
-                    <div v-else-if="useCaptionGenerator.allGeneratedCaption.success"
-                        class="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-5">
-                        <div v-for="item in useCaptionGenerator.allGeneratedCaption.data" :key="item.id"
-                            class="card w-full rounded-lg overflow-hidden shadow flex flex-col bg-white">
-                            <div class="h-[240px]">
-                                <img :src="item.imageUrl" alt="" class="w-full h-full object-cover object-top">
-                            </div>
-                            <div class="p-[20px]">
-                                <div class="w-full flex items-center justify-between">
-                                    <div class="">
-                                        <p class="">
-                                            {{ getFormatDateTime(item.created_at) }}
-                                        </p>
-                                    </div>
-                                    <div class="">
-                                        <Tag v-if="item.status == 'successful'" icon="pi pi-check" severity="success"
-                                            value="Successful"></Tag>
-                                        <Tag v-if="item.status == 'pending'" severity="warning" value="Pending"></Tag>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <CaptionGrid v-else-if="useCaptionGenerator.allGeneratedCaption.success" />
                 </div>
                 <CaptionGenerator />
             </section>

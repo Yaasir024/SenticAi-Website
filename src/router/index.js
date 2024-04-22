@@ -45,6 +45,14 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
+    {
+      path: "/dashboard/:id",
+      name: "dashboard-caption-details",
+      component: () => import("../views/dashboard/caption/Details.vue"),
+      meta: {
+        requiresAuth: true,
+      },
+    },
   ],
   scrollBehavior(to, from, savedPosition) {
     // always scroll to top
