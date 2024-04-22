@@ -203,6 +203,9 @@ export const useCaptionGeneratorStore = defineStore("CaptionGenerator", () => {
           router.push("/dashboard");
         }
         useSystem.hideLoader();
+        setTimeout(() => {
+          clearGenerateData()
+        }, 0)
       } catch (captionError) {
         // console.error("Error generating caption:", captionError);
 
