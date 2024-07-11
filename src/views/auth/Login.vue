@@ -26,7 +26,7 @@ const login = () => {
             </h1>
             <div class="mt-10 bg-white border rounded-[10px] max-w-[500px] w-full p-[20px]">
                 <h4 class="text-[21px] font-semibold">
-                    Create your account
+                    Login
                 </h4>
                 <div class="mt-4">
                     <form @submit.prevent="login" autocomplete="on" class="flex flex-col gap-y-4">
@@ -50,14 +50,14 @@ const login = () => {
                         </div>
                         <div class="">
                             <button class="bg-brand w-full p-4 rounded-lg text-white">
-                                Create Account
+                                Login
                             </button>
                         </div>
                     </form>
                 </div>
                 <div class="mt-[30px]">
                 <p class="text-center text-[16px]">
-                    Don't have an account? <RouterLink to="/signup" class="font-medium underline hover:text-brand transition-all duration-200 ease-in-out">Create one</RouterLink>
+                    Already have an account? <RouterLink to="/login" class="font-medium underline hover:text-brand transition-all duration-200 ease-in-out">Login</RouterLink>
                 </p>
             </div>
             </div>
